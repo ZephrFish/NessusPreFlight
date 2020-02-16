@@ -11,32 +11,29 @@
 
   Current Functions:
   Invoke-NPF -localonly
-  Invoke-NPF -cleanup
+  Invoke-NPF -localclean
   Invoke-NPF -checklocalreg
   Invoke-NPF -remote -target '10.10.20.1'
+  Invoke-NPF -remoteclean -target '10.10.20.1'
 
 
   Author: Andy Gill (@ZephrFish)
   Company: Pen Test Partners LLP
-  Version: 0.26
+  Version: 0.50
   Required Dependencies: None
   Optional Dependencies: None   
 
   New & Fixes in this release:
     Fixed: Tidied up function names 
-    Remotely set registry values via WMI
-    
+    New: Remotely set registry values via WMI
+    New: Remotely cleanup registry keys, delete domain and standard keys, modify the LocalAccountTokenFilterPolicy to set to  0
+    New: Run in remote or localonly mode based on flags, added in -localclean & -remoteclean
 
   Todo List:
 		Things to Add:
-            Remotely run all functions in script
-                set all the registry keys to be modified - Invoke-Remote currently does this in a hacky manner
-            remote cleanup:
-                set DWORD on all three keys to 0
             remote check:
                 check for existence of the keys
 			Add in abilty to pass a range of IP addressses or cidr format
-			Run in remote or localonly mode based on flags
 			
 
 .DESCRIPTION
@@ -45,14 +42,17 @@
 	Invoke-NPF -localonly
 	Only check for the registry keys and set them if not already.
 .EXAMPLE
-	Invoke-NPF -cleanup
-    Revert the keys back to standard once complete
+	Invoke-NPF -localclean
+    Revert the keys back to standard once complete, run on a local system
 .EXAMPLE
 	Invoke-NPF -checklocalreg
     Run just the checks don't change anything, if not set the function will recommend running -localonly
 .EXAMPLE
 	Invoke-NPF -remote -target '10.10.20.1'
     Run the script against a remote system, note this will prompt for your credentials, please enter then DOMAIN\Username
+.EXAMPLE
+	Invoke-NPF -remoteclean -target '10.10.20.1'
+    Revert the keys back to standard once complete, run on a remote system
 
 #>
 
@@ -180,7 +180,7 @@ param(
     }
     
     # Create function for cleaning up the actions of NPF to revert an environment 
-    function CleanReg {
+    function Invoke-CleanReg {
         # Check for LocalAccountTokenFilterPolicy Registry key value
         if ((Get-ItemPropertyValue -Path $localATFPPath -Name "LocalAccountTokenFilterPolicy") -eq '1') {
             Write-Host '[+] The value of LocalAccountTokenFilterPolicy is 1, cleaning up the registry setting this back to 0' -ForegroundColor Yellow 
@@ -251,9 +251,9 @@ param(
             $creds = Get-Credential
 
             # First we want to check we can reach the remote system
+            # need to add in ping command in here to test connection to remote system
             
-            
-            #Get-WmiObject -Namespace "root\cimv2" -Class Win32_ComputerSystem -Credential $cred -ComputerName '10.10.20.48'
+            #Get-WmiObject -Namespace "root\cimv2" -Class Win32_ComputerSystem -Credential $cred -ComputerName $target
             
             # Create top level key
             # HKLM:\Software\Microsoft\Windows\CurrentVersion\Policies\System
@@ -297,11 +297,50 @@ param(
             }
             
             
-            ################################################################################################################
+            }
+    
+            # Remote funciton for cleaning up a remote system, supply with a target IP address and the function will clean the host up by deleting the keys
+            function Invoke-RemoteCleanup {
+                param (
+                    [uint32]$hklm = 2147483650,
+                    [uint32]$hkcu = 2147483649,
+                    [string]$target
+            )
+            # Top level keys
+            $localATFPPathNKV = "Software\Microsoft\Windows\CurrentVersion\Policies\System"
+            $gpoDomPathNKV = "SOFTWARE\Policies\Microsoft\WindowsFirewall\DomainProfile\Services\FileAndPrint"
+            $gpoStandPathNKV = "SOFTWARE\Policies\Microsoft\WindowsFirewall\StandardProfile\Services\FileAndPrint"
             
+            # The value we're setting
+            $localATFPPathNN = "LocalAccountTokenFilterPolicy"
+            $creds = Get-Credential
             
+            # Set cleanup commands
+            $GPODomClean = Invoke-WmiMethod -Namespace root\cimv2 -Class StdRegProv -Name DeleteKey  $hklm, $gpoDomPathNKV -ComputerName $target -Credential $creds
+            $GPOStanClean = Invoke-WmiMethod -Namespace root\cimv2 -Class StdRegProv -Name DeleteKey  $hklm, $gpoStandPathNKV -ComputerName $target -Credential $creds
+            $localATFPValueResult = Invoke-WmiMethod -Namespace root\cimv2 -Class StdRegProv -Name SetDWORDvalue -ArgumentList @( $hklm, $localATFPPathNKV, $localATFPPathNN, 0) -ComputerName $target -Credential $creds
+            
+            # Get Results
+            If ($localATFPValueResult.Returnvalue -eq 0) {
+                Write-Host "[1] LocalAccountTokenFilterPolicy DWORD Value set to 0" -ForegroundColor Green
+            }
+            
+            # Create String value for Domain Profile
+            If ($GPODomClean.Returnvalue -eq 0) {
+                Write-Host  "[2] DomainProfile Reg Key Value Deleted!" -ForegroundColor Green
+            }
+            
+            If ($GPOStanClean.Returnvalue -eq 0) {
+                Write-Host  "[3] StandardProfile Reg Key Value Deleted!"
+            }
+            
+            if ($localATFPValueResult.Returnvalue -eq 0 -and $GPODomClean.Returnvalue -eq 0 -and $GPOStanClean.Returnvalue -eq 0) {
+                Write-Host  "[!] Remote Cleanup Complete" -ForegroundColor Green
             
             }
+            
+            }
+            
 
     # Warn the user about GPO
     
@@ -317,10 +356,10 @@ param(
 
         Invoke-LocalMode   
             
-    } elseif ($cleanup) {
+    } elseif ($localclean) {
     
-        CleanReg 
-            
+        Invoke-CleanReg 
+    
     } elseif ($checklocalreg) {
     
         Invoke-LocalChecks
@@ -328,6 +367,10 @@ param(
     } elseif ($remote) {
 
         Invoke-Remote
+    
+    } elseif ($remoteclean) {
+
+        Invoke-RemoteCleanup
     
     } elseif ($debugmode) {
         # Drop anything in here you want to quickly test
@@ -338,7 +381,7 @@ param(
     
     } else {
         Write-Output ""
-        Write-Host '[!] Looks like you have not picked a flag, please select either local, check, cleanup or remote. Printing help messages' -ForegroundColor Red 
+        Write-Host '[!] Looks like you have not picked an option, please select either local, check, cleanup or remote. Printing help messages' -ForegroundColor Red 
         Get-Help Invoke-NPF 
     }
     
