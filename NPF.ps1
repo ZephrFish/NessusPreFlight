@@ -19,20 +19,23 @@
 
   Author: Andy Gill (@ZephrFish)
   Company: Pen Test Partners LLP
-  Version: 0.50
+  Version: 0.53
   Required Dependencies: None
   Optional Dependencies: None   
 
   New & Fixes in this release:
     Fixed: Tidied up function names 
+    Fixed: Remote fucntions no longer duplicate target parameter
     New: Remotely set registry values via WMI
-    New: Remotely cleanup registry keys, delete domain and standard keys, modify the LocalAccountTokenFilterPolicy to set to  0
+    New: Remotely cleanup registry keys, delete domain and standard keys, modify the LocalAccountTokenFilterPolicy to set to  0 via Invoke-WMIMethod
     New: Run in remote or localonly mode based on flags, added in -localclean & -remoteclean
 
+  
+  Options in Beta:
+    CIDR Parsing > New-IPv4RangeFromCIDR -Network 10.10.10.1/24
+  
   Todo List:
 		Things to Add:
-            remote check:
-                check for existence of the keys
 			Add in abilty to pass a range of IP addressses or cidr format
 			
 
@@ -85,6 +88,75 @@ if(-not (Test-Administrator))
 
 $ErrorActionPreference = "Stop";
 
+###########################################################
+# CIDR Testing                                            #
+# Insert code for parsing CIDR ranges                     #
+###########################################################
+function New-IPv4RangeFromCIDR {
+    param(
+       [Parameter(Mandatory=$true,
+       ValueFromPipelineByPropertyName=$true,
+       Position=0)]
+       $Network
+    )
+
+# Extract the portions of the CIDR that will be needed
+$StrNetworkAddress = ($Network.split('/'))[0]
+[int]$NetworkLength = ($Network.split('/'))[1]
+$NetworkIP = ([System.Net.IPAddress]$StrNetworkAddress).GetAddressBytes()
+$IPLength = 32-$NetworkLength
+[Array]::Reverse($NetworkIP)
+$NumberOfIPs = ([System.Math]::Pow(2, $IPLength)) -1
+$NetworkIP = ([System.Net.IPAddress]($NetworkIP -join '.')).Address
+$StartIP = $NetworkIP +1
+$EndIP = $NetworkIP + $NumberOfIPs
+
+# We make sure they are of type Double before conversion
+If ($EndIP -isnot [double])
+{
+    $EndIP = $EndIP -as [double]
+}
+If ($StartIP -isnot [double])
+{
+    $StartIP = $StartIP -as [double]
+}
+# We turn the start IP and end IP in to strings so they can be used.
+$StartIP = ([System.Net.IPAddress]$StartIP).IPAddressToString
+$EndIP = ([System.Net.IPAddress]$EndIP).IPAddressToString
+New-IPv4Range $StartIP $EndIP
+}
+
+function New-IPv4Range
+{
+    param(
+        [Parameter(Mandatory=$true,
+        ValueFromPipelineByPropertyName=$true,
+        Position=0)]
+        $StartIP,
+
+        [Parameter(Mandatory=$true,
+        ValueFromPipelineByPropertyName=$true,
+        Position=2)]
+        $EndIP      
+        )
+
+    # created by Dr. Tobias Weltner, MVP PowerShell
+    $ip1 = ([System.Net.IPAddress]$StartIP).GetAddressBytes()
+    [Array]::Reverse($ip1)
+    $ip1 = ([System.Net.IPAddress]($ip1 -join '.')).Address
+
+    $ip2 = ([System.Net.IPAddress]$EndIP).GetAddressBytes()
+    [Array]::Reverse($ip2)
+    $ip2 = ([System.Net.IPAddress]($ip2 -join '.')).Address
+
+    for ($x=$ip1; $x -le $ip2; $x++) {
+        $ip = ([System.Net.IPAddress]$x).GetAddressBytes()
+        [Array]::Reverse($ip)
+        $ip -join '.'
+        }
+}
+############################################################
+############################################################
 
 # Create main function
 function Invoke-NPF
@@ -99,7 +171,7 @@ param(
     [Parameter(
         HelpMessage='Revert the keys back to standard once complete'
         )]
-    [switch]$cleanup,
+    [switch]$localclean,
     
     [Parameter(
         HelpMessage='Run just the checks dont change anything, if not set the function will recommend running -localonly'
@@ -110,6 +182,11 @@ param(
         HelpMessage='Check a remote system or range of systems for registry keys to be set and if not set enable them'
         )]
     [switch]$remote,
+
+    [Parameter (
+        HelpMessage='Revert the keys back to standard once complete, run on a remote system'
+    )]
+    [switch]$remoteclean,
 
     [Parameter(
         HelpMessage='Target remote host, can be IP address or hostname'
@@ -303,8 +380,7 @@ param(
             function Invoke-RemoteCleanup {
                 param (
                     [uint32]$hklm = 2147483650,
-                    [uint32]$hkcu = 2147483649,
-                    [string]$target
+                    [uint32]$hkcu = 2147483649
             )
             # Top level keys
             $localATFPPathNKV = "Software\Microsoft\Windows\CurrentVersion\Policies\System"
@@ -338,6 +414,8 @@ param(
                 Write-Host  "[!] Remote Cleanup Complete" -ForegroundColor Green
             
             }
+
+            
             
             }
             
@@ -378,6 +456,7 @@ param(
         Write-Host "[+] Debug Mode Enabled" -ForeGroundColor Blue
         Write-Host '[!] Testing Stuff out here' -ForeGroundColor Magenta -NoNewLine
         Write-Host ""
+        Write-Host "[#] Debug Mode [#]" -ForegroundColor DarkGreen
     
     } else {
         Write-Output ""
@@ -385,11 +464,7 @@ param(
         Get-Help Invoke-NPF 
     }
     
-         
-    
-    Write-Output ""
-    Write-Host "[+] Looks like the machine is prepped and ready for probing, Go Go Nessus!" -ForegroundColor Magenta 
-   
+
   }
 
 
