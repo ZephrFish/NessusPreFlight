@@ -2,7 +2,6 @@
 
 .Synopsis
   Nessus Preflight(NPF) Check for local and remote systems, Yes it is very hacky code but it works ok :)
-  Essentially sets three registry keys and restarts a service to allow nessus to scan a machine, as of 0.25 a remote function is included :)
 
   Reg Keys modified:
   HKLM:\Software\Microsoft\Windows\CurrentVersion\Policies\System\LocalAccountTokenFilterPolicy
@@ -19,7 +18,7 @@
 
   Author: Andy Gill (@ZephrFish)
   Company: Pen Test Partners LLP
-  Version: 0.53
+  Version: 0.66
   Required Dependencies: None
   Optional Dependencies: None   
 
@@ -204,42 +203,41 @@ param(
         If ((Get-ItemPropertyValue -Path $localATFPPath -Name "LocalAccountTokenFilterPolicy") -eq '0') {
             Write-Verbose '[!] The Registry key does not exist, setting it view reg add'
             REG add "HKLM\Software\Microsoft\Windows\CurrentVersion\Policies\System" /v LocalAccountTokenFilterPolicy /t REG_DWORD /d 1 /f
-            $localcheckcount++
+           
             Write-Host "[!] Enabled DomainProfile [Step 1 = Complete]" -ForegroundColor Green
         } elseif ((Get-ItemPropertyValue -Path $localATFPPath -Name "LocalAccountTokenFilterPolicy") -eq '1') {
             Write-Host '[!] LocalAccountTokenFilterPolicy Enabled, next checking Domain and Standard Profiles' -ForegroundColor Green
-            $localcheckcount++
+           
         }
        
         # Check the domain profile regkey and set if not enabled
-        If (-not (Test-Path -Path $gpoDomPath -Name "Enabled")) {
+        If (-not (Test-Path -Path $gpoDomPath)) {
             Write-Host "[+] Looks like DomainProfile is not enabled, Creating a new registry key for this GPO" -ForegroundColor Yellow
             REG add "HKLM\SOFTWARE\Policies\Microsoft\WindowsFirewall\DomainProfile\Services\FileAndPrint" /v Enabled /t REG_DWORD /d 1 /f
             REG add "HKLM\SOFTWARE\Policies\Microsoft\WindowsFirewall\DomainProfile\Services\FileAndPrint" /v RemoteAddresses /t REG_SZ /d "*" /f
-            $localcheckcount++
             Write-Host "[!] Enabled DomainProfile [Step 2a = Complete]" -ForegroundColor Green
         } elseif ((Get-ItemPropertyValue -Path $gpoDomPath -Name "Enabled") -eq '0') {
             Set-ItemProperty -Path $gpoDomPath -Name 'Enabled' -Value '1'
             Write-Host "[!] Enabled DomainProfile [Step 2a = Complete]" -ForegroundColor Green
-            $localcheckcount++
+           
         } else {
             Write-Host "[!] All good [Step 2a = Complete]" -ForegroundColor Green
-            $localcheckcount++   
+              
         }
     
         # Check the standard profile regkey and set if not enabled
-        If (-not (Test-Path -Path $gpoStandPath -Name "Enabled")) {
+        If (-not (Test-Path -Path $gpoStandPath)) {
             Write-Host "[+] Looks like StandardProfile is not enabled, Creating a new registry key for this GPO" -ForegroundColor Yellow
             REG add "HKLM\SOFTWARE\Policies\Microsoft\WindowsFirewall\StandardProfile\Services\FileAndPrint" /v Enabled /t REG_DWORD /d 1 /f
             REG add "HKLM\SOFTWARE\Policies\Microsoft\WindowsFirewall\StandardProfile\Services\FileAndPrint" /v RemoteAddresses /t REG_SZ /d "*" /f
-            $localcheckcount++
+           
         } elseif ((Get-ItemPropertyValue -Path $gpoStandPath -Name "Enabled") -eq '0') {
             Set-ItemProperty -Path $gpoStandPath -Name 'Enabled' -Value '1'
             Write-Host "[!] Enabled StandardProfile [Step 2b = Complete]" -ForegroundColor Green
-            $localcheckcount++
+           
         } else {
             Write-Host "[!] All good [Step 2b = Complete]" -ForegroundColor Green
-            $localcheckcount++ 
+            
         }
         
         # Check the status of the counter for local checks
@@ -280,17 +278,13 @@ param(
         }
         
         # If we get all zeros back cleanup has been successful
-        if ($regcleancount -ge '3') {
-            Write-Host ""
-            Write-Host "[!] Cleanup was successful!" -ForegroundColor Green -NoNewline
-            Write-Host ""
-        } else {
+        
             Write-Host "[!] Looks like either the keys don't exist or they've already been cleaned" -ForegroundColor Yellow
             Write-Host "[*] If you see three zeros below the system is already clean" -ForegroundColor Green
             Get-ItemPropertyValue -Path $localATFPPath -Name "LocalAccountTokenFilterPolicy"
             Get-ItemPropertyValue -Path $gpoDomPath -Name "Enabled"
             Get-ItemPropertyValue -Path $gpoStandPath -Name "Enabled"
-        }
+        
         
     }
 
@@ -454,9 +448,9 @@ param(
         # Drop anything in here you want to quickly test
         Write-Host ""
         Write-Host "[+] Debug Mode Enabled" -ForeGroundColor Blue
-        Write-Host '[!] Testing Stuff out here' -ForeGroundColor Magenta -NoNewLine
-        Write-Host ""
         Write-Host "[#] Debug Mode [#]" -ForegroundColor DarkGreen
+        Write-Host ""
+        
     
     } else {
         Write-Output ""
