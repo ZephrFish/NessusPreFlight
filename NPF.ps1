@@ -23,7 +23,7 @@
 
   New & Fixes in this release:
     Fixed: Tidied up function names 
-    Fixed: Remote fucntions no longer duplicate target parameter
+    Fixed: Remote functions no longer duplicate target parameter
     New: Remotely set registry values via WMI
     New: Remotely cleanup registry keys, delete domain and standard keys, modify the LocalAccountTokenFilterPolicy to set to  0 via Invoke-WMIMethod
     New: Run in remote or localonly mode based on flags, added in -localclean & -remoteclean
