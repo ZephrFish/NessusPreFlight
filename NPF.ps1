@@ -17,8 +17,7 @@
 
 
   Author: Andy Gill (@ZephrFish)
-  Company: Pen Test Partners LLP
-  Version: 0.66
+  Version: 0.100 Alpha
   Required Dependencies: None
   Optional Dependencies: None   
 
@@ -30,12 +29,9 @@
     New: Run in remote or localonly mode based on flags, added in -localclean & -remoteclean
 
   
-  Options in Beta:
+  Work in Progress:
     CIDR Parsing > New-IPv4RangeFromCIDR -Network 10.10.10.1/24
   
-  Todo List:
-		Things to Add:
-			Add in abilty to pass a range of IP addressses or cidr format
 			
 
 .DESCRIPTION
