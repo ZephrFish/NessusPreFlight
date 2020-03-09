@@ -1,7 +1,7 @@
 <#
 
 .Synopsis
-  Nessus Preflight(NPF) Check for local and remote systems, Yes it is very hacky code but it works ok :)
+  Nessus Preflight(NPF) Check for local and remote systems, Yes it is very hacky code but it works ok :). This script essentially will do local checks on a windows system or on a remote system, sets the reg keys required for nessus to do its magic!
 
   Reg Keys modified:
   HKLM:\Software\Microsoft\Windows\CurrentVersion\Policies\System\LocalAccountTokenFilterPolicy
@@ -28,9 +28,12 @@
     New: Remotely cleanup registry keys, delete domain and standard keys, modify the LocalAccountTokenFilterPolicy to set to  0 via Invoke-WMIMethod
     New: Run in remote or localonly mode based on flags, added in -localclean & -remoteclean
 
+ Known Issues:
+    Sometimes when running against a remote host there will be an error 'rpc server unavailable', I'm working on a fix for this!
   
   Work in Progress:
-    CIDR Parsing > New-IPv4RangeFromCIDR -Network 10.10.10.1/24
+    CIDR Parsing > New-IPv4RangeFromCIDR -Network 10.1.1.1/24
+    Function pulled from https://github.com/nettitude/PoshC2/blob/master/resources/modules/Invoke-Hostscan.ps1
   
 			
 
