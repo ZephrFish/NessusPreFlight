@@ -12,8 +12,8 @@
   Invoke-NPF -localonly
   Invoke-NPF -localclean
   Invoke-NPF -checklocalreg
-  Invoke-NPF -remote -target '10.10.20.1'
-  Invoke-NPF -remoteclean -target '10.10.20.1'
+  Invoke-NPF -remote -target '10.1.1.1'
+  Invoke-NPF -remoteclean -target '10.1.1.1'
 
 
   Author: Andy Gill (@ZephrFish)
@@ -49,10 +49,10 @@
 	Invoke-NPF -checklocalreg
     Run just the checks don't change anything, if not set the function will recommend running -localonly
 .EXAMPLE
-	Invoke-NPF -remote -target '10.10.20.1'
+	Invoke-NPF -remote -target '10.1.1.1'
     Run the script against a remote system, note this will prompt for your credentials, please enter then DOMAIN\Username
 .EXAMPLE
-	Invoke-NPF -remoteclean -target '10.10.20.1'
+	Invoke-NPF -remoteclean -target '10.1.1.1'
     Revert the keys back to standard once complete, run on a remote system
 
 #>
