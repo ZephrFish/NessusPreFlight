@@ -1,4 +1,8 @@
-# Nessus PreFlight Quick-Start
+# Nessus PreFlight 
+## Description
+Nessus Preflight(NPF) Check for local and remote systems, Yes it is very hacky code but it works ok :). This script essentially will do local checks on a windows system or on a remote system, sets the reg keys required for nessus to do its magic!
+
+## Quick-Start
 Import the module:
 `. .\NessusPreFlight.ps1`
 
