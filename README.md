@@ -1,6 +1,7 @@
 # Nessus PreFlight 
 
 **Use at your own risk, this project is in Alpha**
+If there are any suggestions or bugs(please submit a pull request and try to fix them, 'cause that's how collaborative coding works!)
 
 ## Description
 Nessus Preflight(NPF) Check for local and remote systems, Yes it is very hacky code but it works ok :). This script essentially will do local checks on a windows system or on a remote system, sets the reg keys required for nessus to do its magic!
