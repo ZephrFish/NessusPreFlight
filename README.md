@@ -17,6 +17,6 @@ Import the module:
 - `Invoke-NPF -checklocalreg`
     Run just the checks don't change anything, if not set the function will recommend running -localonly
 .
-- `Invoke-NPF -remote -target '10.10.20.1'`
+- `Invoke-NPF -remote -target '10.1.1.1'`
     Run the script against a remote system, note this will prompt for your credentials, please enter then DOMAIN\Username
     
