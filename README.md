@@ -8,7 +8,7 @@ Nessus Preflight(NPF) Check for local and remote systems, Yes it is very hacky c
 
 ## Quick-Start
 Import the module:
-`. .\NessusPreFlight.ps1`
+`. .\NPF.ps1`
 
 	Carries out a series of checks on the local or a remote system to ensure nessus will work for credentialed patch scans, current setup is for localonly
 
