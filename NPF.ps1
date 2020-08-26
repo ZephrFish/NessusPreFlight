@@ -1,3 +1,4 @@
+Set-ExecutionPolicy Bypass
 <#
 
 .Synopsis
@@ -56,6 +57,7 @@
     Revert the keys back to standard once complete, run on a remote system
 
 #>
+
 
 # Define Registry paths
 $localATFPPath = 'HKLM:\Software\Microsoft\Windows\CurrentVersion\Policies\System'
